@@ -17,6 +17,7 @@ class evader_controller(FACL):
         self.territory_coordinates = [0, 30]  # these will eventually be in the game class and passed into the actor
         self.r = 1 #radius of the territory
         self.v = 1.1  # unit velocity
+        self.input = 0
         self.distance_away_from_terr_t_plus_1 = 0 #this gets set later
         self.distance_away_from_terr_t = self.distance_from_target()
         #self.distance_away_from_p2_t = self.distance_from_target([0, -5])
@@ -47,6 +48,8 @@ class evader_controller(FACL):
         self.path = []
         self.path = self.initial_position.copy()
         self.reward_track = []
+        self.input = []
+        self.input = 0
         self.distance_away_from_terr_t = self.distance_from_target()
         pass
 
@@ -57,9 +60,29 @@ class evader_controller(FACL):
 
     def update_reward_graph(self, r):
         self.reward_track.append(r)
-
+    def update_input_array(self, u):
+        self.input = np.vstack([self.input, u])
+        pass
     def distance_from_target(self):
         distance_away_from_target = np.sqrt(
             (self.state[0] - self.territory_coordinates[0]) ** 2 + (self.state[1] - self.territory_coordinates[1]) ** 2)
         return distance_away_from_target
 
+
+    def save(self):
+        # save the actor weight list
+        np.savetxt('actor_weights.csv', self.omega, delimiter=',')
+        # save the critic weight list
+        np.savetxt('critic_weights.csv', self.zeta, delimiter=',')
+        # save the fuzzy system information
+        # savetxt('fuzzy_info.txt',self.fuzzy_info)
+        np.savetxt("fuzzy_info.txt", self.fuzzy_info_max, fmt='%1.3f', newline="\n")
+        with open("fuzzy_info.txt", "a") as f:
+            np.savetxt(f, self.fuzzy_info_min, fmt='%1.3f', newline="\n")
+            np.savetxt(f, self.fuzzy_info_nmf, fmt='%1.3f', newline="\n")
+        np.savetxt('u_t.csv', self.input, delimiter=',')
+        pass
+
+def load(self):
+    self.omega = np.loadtxt('actor_weights.csv', delimiter=',')
+    self.zeta = np.loadtxt('critic_weights.csv', delimiter=',')
