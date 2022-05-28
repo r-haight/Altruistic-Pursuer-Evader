@@ -74,7 +74,7 @@ deer = Agent(deer_FACLcontroller)
 
 rolling_success_counter = 0
 cycle_counter = 0
-for i in range(100):
+for i in range(4000):
     lassie.controller.reset()
     rex.controller.reset()
     deer.controller.reset()
@@ -141,28 +141,28 @@ for i in range(100):
             rex.controller.distance_away_from_target_t_plus_1 = rex.controller.distance_from_target(deer_pos)
             deer.controller.distance_away_from_target_t_plus_1 = deer.controller.distance_from_target()
 
-            lassie_individual_r = -1
-            rex_individual_r = -10
+            lassie_individual_r = -3
+            rex_individual_r = -5
             team_reward = 0
-            w = 0.2 # weight of individual reward to team reward
+            w = 0.5 # weight of individual reward to team reward
 
             # TERMINAL REWARDS
 
             if (rex.controller.state[2] < rex.controller.r):
-                rex_individual_r = 10
+                rex_individual_r = 5
                 rex.success += 1
                 if(lassie.controller.state[2] < 2*lassie.controller.r):
-                    team_reward = 5
+                    team_reward = 7
                     capture_region_counter+=1
                 lassie.controller.reward = w*lassie_individual_r + (1-w)*(lassie_individual_r+rex_individual_r+team_reward)
                 rex.controller.reward = w * rex_individual_r + (1 - w) * (lassie_individual_r + rex_individual_r + team_reward)
                 deer.controller.reward = 0
             elif (lassie.controller.state[2] < lassie.controller.r):
-                lassie_individual_r = 1
+                lassie_individual_r = 3
                 lassie.success += 1
                 # check if rex was in the circle
                 if(rex.controller.state[2] < 2*rex.controller.r):
-                    team_reward = 5
+                    team_reward = 7
                     capture_region_counter += 1
                 lassie.controller.reward = w * lassie_individual_r + (1 - w) * (
                                 lassie_individual_r + rex_individual_r + team_reward)
@@ -228,7 +228,7 @@ for i in range(100):
     #     print('number of epochs trained: ', i)
     #     break
     # print out some stats as it trains every so often
-    if (i % 10 == 0):
+    if (i % 500 == 0):
         print('epoch number : ', i)
         print("time:", time.time()-start)
         print("xy path of lassie",lassie.controller.path[len(lassie.controller.path)-1]) #numerical values of path
@@ -239,7 +239,7 @@ for i in range(100):
         print('lassie wins : ', lassie.success)
         print('rex wins ', rex.success)
         print('capture regions ', capture_region_counter)
-        plot_paths()
+
         #print("input, ut:", lassie.controller.input)
 
 end = time.time()
@@ -253,57 +253,77 @@ print(' total num of successes during training for rex : ', rex.success)
 
 
 
-# lassie.success = 0
-# rex.success = 0
-# number_of_ties=0
-# lassie.controller.sigma = 0.15
-# rex.controller.sigma = 0.15
-# #Run a series of games
-# for i in range(1000):
-#     lassie.controller.reset()
-#     rex.controller.reset()
-#     for j in range(lassie.training_iterations_max):
-#         # lassie.controller.iterate_train()
-#         # rex.controller.iterate_train()
-#         if (lassie.controller.state[0] < lassie.controller.finish_line and rex.controller.state[0] <  rex.controller.finish_line):  ##if both havent crossed the finish line, train
-#             lassie.controller.generate_noise()
-#             rex.controller.generate_noise()
-#             # Step 3 :  calculate the necessary action
-#             lassie.controller.calculate_ut()
-#             rex.controller.calculate_ut()
-#
-#             # Step 5: update the state of the system
-#             lassie.controller.update_state()
-#             rex.controller.update_state()
-#             lassie.controller.phi_next = lassie.controller.update_phi()
-#             lassie.controller.phi = lassie.controller.phi_next
-#             rex.controller.phi_next = rex.controller.update_phi()
-#             rex.controller.phi = rex.controller.phi_next
-#         else:  # if an agent has crossed the line
-#             if (lassie.controller.state[0] >= lassie.controller.finish_line and rex.controller.state[
-#                 0] >= rex.controller.finish_line):
-#                 number_of_ties += 1
-#                 # plot_both_velocities()
-#                 break
-#             if (lassie.controller.state[0] >= lassie.controller.finish_line):
-#                 lassie.success += 1
-#                 if (rex.controller.state[0] >= rex.controller.finish_line - 1):
-#                     lassie.success -= 1
-#                     number_of_ties += 1
-#                     # plot_both_velocities()
-#                 break
-#             if (rex.controller.state[0] >= rex.controller.finish_line):
-#                 rex.success += 1
-#                 if (lassie.controller.state[0] >= lassie.controller.finish_line - 1):
-#                     rex.success -= 1
-#                     number_of_ties += 1
-#                     # plot_both_velocities()
-#                 break
-#
-# print('GAME STATS ')
-# print('lassie wins : ', lassie.success)
-# print('rex wins ', rex.success)
-# print('ties ', number_of_ties)
+lassie.success = 0
+rex.success = 0
+number_of_ties=0
+capture_region_counter=0
+lassie.controller.sigma = 0.15
+rex.controller.sigma = 0.15
+#Run a series of games
+for i in range(1000):
+    lassie.controller.reset()
+    rex.controller.reset()
+    deer.controller.reset()
+    for j in range(lassie.training_iterations_max):
+        # lassie.controller.iterate_train()
+        # rex.controller.iterate_train()
+        if (lassie.controller.state[3] > lassie.controller.r and rex.controller.state[3] > rex.controller.r):
+            lassie.controller.generate_noise()
+            rex.controller.generate_noise()
+            deer.controller.generate_noise()
+            # Step 3 :  calculate the necessary action
+            lassie.controller.calculate_ut()
+            rex.controller.calculate_ut()
+            deer.controller.calculate_ut()
+
+            # Step 5: update the state of the system
+            lassie.controller.state[0] = lassie.controller.state[0] + lassie.controller.v * np.cos(
+                lassie.controller.u_t)  # x pos
+            lassie.controller.state[1] = lassie.controller.state[1] + lassie.controller.v * np.sin(
+                lassie.controller.u_t)  # y pos
+            rex.controller.state[0] = rex.controller.state[0] + rex.controller.v * np.cos(rex.controller.u_t)  # x pos
+            rex.controller.state[1] = rex.controller.state[1] + rex.controller.v * np.sin(rex.controller.u_t)  # y pos
+            deer.controller.state[0] = deer.controller.state[0] + deer.controller.v * np.cos(
+                deer.controller.u_t)  # x pos
+            deer.controller.state[1] = deer.controller.state[1] + deer.controller.v * np.sin(
+                deer.controller.u_t)  # y pos
+
+            # Find the distances between the wolfs and the deer
+            lassie_pos = [lassie.controller.state[0], lassie.controller.state[1]]
+            deer_pos = [deer.controller.state[0], deer.controller.state[1]]
+            rex_pos = [rex.controller.state[0], rex.controller.state[1]]
+            lassie.controller.state[2] = distance_between(lassie_pos, deer_pos)
+            rex.controller.state[2] = distance_between(rex_pos, deer_pos)
+            lassie.controller.state[3] = rex.controller.state[2]
+            rex.controller.state[3] = lassie.controller.state[2]
+
+            lassie.controller.update_path(lassie_pos)
+            lassie.controller.update_input_array(lassie.controller.u_t)
+            rex.controller.update_path(rex_pos)
+            rex.controller.update_input_array(rex.controller.u_t)
+            deer.controller.update_input_array(deer.controller.u_t)
+            deer.controller.update_path(deer_pos)
+
+            lassie.controller.phi_next = lassie.controller.update_phi()
+            rex.controller.phi_next = rex.controller.update_phi()
+            deer.controller.phi_next = deer.controller.update_phi()
+        else:  # if an agent has crossed the line
+            if (rex.controller.state[2] < rex.controller.r):
+                rex.success += 1
+                if (lassie.controller.state[2] < 2 * lassie.controller.r):
+                    capture_region_counter +=1
+
+            elif (lassie.controller.state[2] < lassie.controller.r):
+                lassie.success += 1
+                # check if rex was in the circle
+                if (rex.controller.state[2] < 2 * rex.controller.r):
+                    capture_region_counter += 1
+            break
+
+print('GAME STATS ')
+print('lassie wins : ', lassie.success)
+print('rex wins ', rex.success)
+print('capture_region_counter ', capture_region_counter)
 
 # lassie.save_epoch_training_info() #save all the important info from our training sesh
 

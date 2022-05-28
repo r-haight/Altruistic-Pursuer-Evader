@@ -12,7 +12,7 @@ class FACL:
     def __init__(self, stateMax : list, stateMin : list, numMF : list):
         self.alpha = 0.1  # critic learning rate
         self.beta = 0.05  # actor learning rate
-        self.gamma = 0.9  # discount factor
+        self.gamma = 0.99  # discount factor
         self.L = int(np.prod(numMF) ) # total number of rules
         self.zeta = np.zeros(self.L)  # critic
         self.omega = np.zeros(self.L)  # actor
