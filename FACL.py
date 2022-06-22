@@ -45,6 +45,7 @@ class FACL:
         triangle_matrix = []
         for sMax, sMin, nMf in zip(state_max, state_min, number_of_mf):
             boundary_array = self.calculate_boundary_values(sMax, sMin, nMf) # divides up the state space and records the values
+            print(boundary_array)
             triangle_matrix.append(self.create_triangular_sets(nMf, boundary_array)) # creates the triangular values for the Membership Function
             pass
 

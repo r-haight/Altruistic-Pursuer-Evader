@@ -1,6 +1,6 @@
 # Libraries and Classes
 import numpy as np
-import FACL
+import random
 from Agent import Agent
 from VDControl import VDControl
 import time
@@ -36,7 +36,7 @@ def plot_paths():
     circle = plt.Circle((deer.controller.state[0], deer.controller.state[1]),
                         rex.controller.r, color='g', fill=False)
     circle2 = plt.Circle((deer.controller.state[0], deer.controller.state[1]),
-                        2*rex.controller.r, color='y', fill=False)
+                        3*rex.controller.r, color='y', fill=False)
     plt.plot(deer.controller.state[0], deer.controller.state[1], 'ro')
     ax.add_patch(circle)
     ax.add_patch(circle2)
@@ -55,16 +55,17 @@ capture_region_counter=0
 lassie_pos = [8.5,6]
 rex_pos = [7.5,12]
 deer_pos = [6,9]
+pos_array = [0, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9,9.5, 10]
 
-inital_dist_lassie_deer = distance_between(lassie_pos, deer_pos)
+initial_dist_lassie_deer = distance_between(lassie_pos, deer_pos)
 initial_dist_rex_deer = distance_between(rex_pos, deer_pos)
 print(initial_dist_rex_deer)
-print(inital_dist_lassie_deer)
+print(initial_dist_lassie_deer)
 
 start = time.time() # used to see how long the training time took
-lassie_FACLcontroller = pursuer_controller([lassie_pos[0], lassie_pos[1],inital_dist_lassie_deer, initial_dist_rex_deer], [50,50,50,50], [-50,-50,0,0], [7,7,7,7],deer_pos) #create the FACL controller
-rex_FACLcontroller = pursuer_controller([rex_pos[0],rex_pos[1],initial_dist_rex_deer, inital_dist_lassie_deer], [50,50,50,50], [-50,-50,0,0], [7,7,7,7],deer_pos)
-deer_FACLcontroller = evader_controller(deer_pos, [50,50], [-50,-50], [5,5])
+lassie_FACLcontroller = pursuer_controller([lassie_pos[0], lassie_pos[1],initial_dist_lassie_deer, initial_dist_rex_deer], [50,50,50,50], [-50,-50,0,0], [20,20,20,20],deer_pos) #create the FACL controller
+rex_FACLcontroller = pursuer_controller([rex_pos[0],rex_pos[1],initial_dist_rex_deer, initial_dist_lassie_deer], [50,50,50,50], [-50,-50,0,0],  [20,20,20,20],deer_pos)
+deer_FACLcontroller = evader_controller(deer_pos, [50,50], [-50,-50], [7,7])
 lassie = Agent(lassie_FACLcontroller) # create the agent with the above controller
 rex = Agent(rex_FACLcontroller)
 deer = Agent(deer_FACLcontroller)
@@ -72,12 +73,39 @@ deer = Agent(deer_FACLcontroller)
 #print("rules:")
 #print(lassie.controller.rules)
 
+lassie.controller.sigma = 0.3
+rex.controller.sigma = 0.3
+
 rolling_success_counter = 0
 cycle_counter = 0
-for i in range(4000):
+for i in range(10000):
     lassie.controller.reset()
     rex.controller.reset()
     deer.controller.reset()
+    #choose random positions for lassie and rex
+    lassie.controller.state[0] = random.choice(pos_array)
+    lassie.controller.state[1] = random.choice(pos_array)
+    lassie.controller.path = []
+    lassie.controller.path = [lassie.controller.state[0], lassie.controller.state[1]]
+    lassie.controller.distance_away_from_target_t = lassie.controller.distance_from_target([0, 0])
+    rex.controller.state[0] = random.choice(pos_array)
+    rex.controller.state[1] = random.choice(pos_array)
+    rex.controller.path = []
+    rex.controller.path = [rex.controller.state[0], rex.controller.state[1]]
+    rex.controller.distance_away_from_target_t = rex.controller.distance_from_target([0, 0]) #np.sqrt((rex.controller.state[0] - 0)**2 + (rex.controller.state[1] - 0)**2)
+    lassie_pos = [lassie.controller.state[0], lassie.controller.state[1]]
+    rex_pos = [rex.controller.state[0], rex.controller.state[1]]
+    initial_dist_lassie_deer = distance_between(lassie_pos, deer_pos)
+    initial_dist_rex_deer = distance_between(rex_pos, deer_pos)
+
+    rex.controller.state[2] = initial_dist_rex_deer
+    lassie.controller.state[2] = initial_dist_lassie_deer
+    rex.controller.state[3] = initial_dist_lassie_deer
+    lassie.controller.state[3] = initial_dist_rex_deer
+
+
+
+
     cycle_counter += 1
     for j in range(lassie.training_iterations_max):
         # lassie.controller.iterate_train()
@@ -137,8 +165,8 @@ for i in range(4000):
             # Step 6: get reward, this will be replaced for value decomp?
             # lassie.controller.reward = lassie.controller.get_reward()
             # lassie.controller.reward = rex.controller.get_reward()
-            lassie.controller.distance_away_from_target_t_plus_1 = lassie.controller.distance_from_target(deer_pos)
-            rex.controller.distance_away_from_target_t_plus_1 = rex.controller.distance_from_target(deer_pos)
+            lassie.controller.distance_away_from_target_t_plus_1 = lassie.controller.distance_from_target(deer_pos) #np.sqrt( (lassie.controller.state[0] - deer.controller.state[0])**2 +(lassie.controller.state[1] - deer.controller.state[1])**2))
+            rex.controller.distance_away_from_target_t_plus_1 = rex.controller.distance_from_target(deer_pos) #np.sqrt( (rex.controller.state[0] - deer.controller.state[0])**2 +(rex.controller.state[1] - deer.controller.state[1])**2))
             deer.controller.distance_away_from_target_t_plus_1 = deer.controller.distance_from_target()
 
             lassie_individual_r = -3
@@ -151,7 +179,7 @@ for i in range(4000):
             if (rex.controller.state[2] < rex.controller.r):
                 rex_individual_r = 5
                 rex.success += 1
-                if(lassie.controller.state[2] < 2*lassie.controller.r):
+                if(lassie.controller.state[2] < 3*lassie.controller.r):
                     team_reward = 7
                     capture_region_counter+=1
                 lassie.controller.reward = w*lassie_individual_r + (1-w)*(lassie_individual_r+rex_individual_r+team_reward)
@@ -161,7 +189,7 @@ for i in range(4000):
                 lassie_individual_r = 3
                 lassie.success += 1
                 # check if rex was in the circle
-                if(rex.controller.state[2] < 2*rex.controller.r):
+                if(rex.controller.state[2] < 3*rex.controller.r):
                     team_reward = 7
                     capture_region_counter += 1
                 lassie.controller.reward = w * lassie_individual_r + (1 - w) * (
@@ -310,13 +338,13 @@ for i in range(1000):
         else:  # if an agent has crossed the line
             if (rex.controller.state[2] < rex.controller.r):
                 rex.success += 1
-                if (lassie.controller.state[2] < 2 * lassie.controller.r):
+                if (lassie.controller.state[2] < 3 * lassie.controller.r):
                     capture_region_counter +=1
 
             elif (lassie.controller.state[2] < lassie.controller.r):
                 lassie.success += 1
                 # check if rex was in the circle
-                if (rex.controller.state[2] < 2 * rex.controller.r):
+                if (rex.controller.state[2] < 3 * rex.controller.r):
                     capture_region_counter += 1
             break
 
